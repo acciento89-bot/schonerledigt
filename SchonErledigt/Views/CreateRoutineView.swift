@@ -32,6 +32,7 @@ struct CreateRoutineView: View {
             }
             .navigationTitle(existing == nil ? String(localized: "Neue Karte") : String(localized: "Karte bearbeiten")).navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button(existing == nil ? String(localized: "Erstellen") : String(localized: "Speichern")) { commit() }.fontWeight(.semibold).disabled(cleanTitle.isEmpty) } }
+            .keyboardDoneToolbar()
         }
     }
     private var cleanTitle: String { title.trimmingCharacters(in: .whitespacesAndNewlines) }
