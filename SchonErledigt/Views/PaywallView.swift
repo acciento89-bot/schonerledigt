@@ -27,6 +27,11 @@ struct PaywallView: View {
                     Button("Käufe wiederherstellen") { Task { await purchases.restore() } }
                     if let message = purchases.errorMessage { Text(message).font(.footnote).foregroundStyle(.red).multilineTextAlignment(.center) }
                     Text("Abonnements verlängern sich automatisch, sofern sie nicht mindestens 24 Stunden vor Ablauf gekündigt werden. Verwaltung über die Apple-ID-Einstellungen.").font(.caption2).foregroundStyle(Brand.secondaryInk).multilineTextAlignment(.center)
+                    HStack(spacing: 18) {
+                        Link("Datenschutz", destination: AppLinks.privacy)
+                        Link("Nutzungsbedingungen", destination: AppLinks.termsOfUse)
+                    }
+                    .font(.caption)
                 }.padding(20)
             }.toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Fertig") { dismiss() } } }
         }
