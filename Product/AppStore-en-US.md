@@ -2,7 +2,7 @@
 
 Name: Already Done?
 
-Subtitle: Know what has been taken care of
+Subtitle: Know what’s already been done
 
 Promotional text: Stop double-checking, driving back, or asking in the family chat. One tap shows what was done, when it happened, and optional photo proof.
 
@@ -19,3 +19,5 @@ Keywords: done,household,family,checklist,reminder,routine,shared,door,pet,widge
 Support: https://kamilunavo.com/schon-erledigt/support
 
 Privacy: https://kamilunavo.com/schon-erledigt/privacy
+
+Terms of Use (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
