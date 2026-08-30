@@ -37,10 +37,10 @@ actor CloudKitService {
     }
 
     func accept(metadata: CKShare.Metadata) async throws {
+        let operation = CKAcceptSharesOperation(shareMetadatas: [metadata])
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            container.acceptShareInvitations(from: [metadata]) { _, error in
-                if let error { continuation.resume(throwing: error) } else { continuation.resume() }
-            }
+            operation.acceptSharesResultBlock = { continuation.resume(with: $0) }
+            container.add(operation)
         }
     }
 
