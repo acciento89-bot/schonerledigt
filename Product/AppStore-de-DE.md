@@ -2,7 +2,7 @@
 
 Name: Schon erledigt?
 
-Untertitel: Gemeinsam wissen, was getan ist
+Untertitel: Wissen, was schon erledigt ist
 
 Werbetext: Nie wieder doppelt füttern, zurückfahren oder im Familienchat nachfragen. Ein Tipp zeigt, was erledigt wurde – mit Uhrzeit, optionalem Foto und automatischer Rücksetzung.
 
@@ -19,3 +19,5 @@ Schlüsselwörter: erledigt,haushalt,familie,checkliste,erinnerung,routine,gemei
 Support: https://kamilunavo.com/schon-erledigt/support
 
 Datenschutz: https://kamilunavo.com/schon-erledigt/datenschutz
+
+Nutzungsbedingungen (EULA): https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
