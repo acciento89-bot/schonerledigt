@@ -38,7 +38,12 @@ struct SettingsView: View {
                 Button("Beispieldaten wiederherstellen", role: .destructive) { showsResetConfirmation = true }
             }
             Section("Wichtiger Hinweis") { Text("Die App dokumentiert deine Eingaben. Sie kann nicht prüfen, ob eine Tür tatsächlich verschlossen oder ein Gerät tatsächlich ausgeschaltet ist.").font(.footnote).foregroundStyle(Brand.secondaryInk) }
-            Section { LabeledContent("Version", value: "1.0.0") }
+            Section("Hilfe & Rechtliches") {
+                Link(destination: AppLinks.support) { Label("Support", systemImage: "questionmark.circle") }
+                Link(destination: AppLinks.privacy) { Label("Datenschutz", systemImage: "hand.raised") }
+                Link(destination: AppLinks.termsOfUse) { Label("Nutzungsbedingungen", systemImage: "doc.text") }
+            }
+            Section { LabeledContent("Version", value: appVersion) }
         }
         .navigationTitle("Einstellungen")
         .alert("Alle eigenen Daten ersetzen?", isPresented: $showsResetConfirmation) {
@@ -47,6 +52,10 @@ struct SettingsView: View {
         .sheet(isPresented: $showsCloudShare) { if let data = store.snapshotData() { CloudSharingView(householdName: store.householdName, snapshotData: data) } }
         .sheet(isPresented: $showsPaywall) { PaywallView().environmentObject(purchases) }
         .onReceive(NotificationCenter.default.publisher(for: .cloudShareAccepted)) { _ in Task { await store.setICloudEnabled(true); await store.syncCloud() } }
+    }
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "–"
     }
 }
 
