@@ -46,6 +46,7 @@ struct SettingsView: View {
             Section { LabeledContent("Version", value: appVersion) }
         }
         .navigationTitle("Einstellungen")
+        .keyboardDoneToolbar()
         .alert("Alle eigenen Daten ersetzen?", isPresented: $showsResetConfirmation) {
             Button("Abbrechen", role: .cancel) {}; Button("Wiederherstellen", role: .destructive) { store.resetToSamples() }
         } message: { Text("Eigene Karten und der Verlauf werden gelöscht und durch die Beispielkarten ersetzt.") }
