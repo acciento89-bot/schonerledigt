@@ -2,8 +2,8 @@ import Foundation
 import StoreKit
 
 @MainActor final class PurchaseManager: ObservableObject {
-    static let yearlyID = "com.kamilunavo.schon-erledigt.pro.yearly"
-    static let lifetimeID = "com.kamilunavo.schon-erledigt.pro.lifetime"
+    static let yearlyID = "com.kamilunavo.schonerledigt.pro.yearly"
+    static let lifetimeID = "com.kamilunavo.schonerledigt.pro.lifetime"
     @Published private(set) var products: [Product] = []
     @Published private(set) var hasPro = false
     @Published private(set) var isLoading = false
