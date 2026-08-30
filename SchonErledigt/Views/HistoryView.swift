@@ -41,6 +41,7 @@ struct HistoryView: View {
             }
         }
         .navigationTitle("Verlauf")
+        .keyboardDoneToolbar()
         .sheet(item: $selectedEvidence) { selection in NavigationStack { Image(uiImage: selection.image).resizable().scaledToFit().background(.black).navigationTitle(selection.title).navigationBarTitleDisplayMode(.inline) } }
     }
 }
