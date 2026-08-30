@@ -1,0 +1,3 @@
+"CFBundleDisplayName" = "Already Done?";
+"NSCameraUsageDescription" = "Use the camera to optionally save private photo proof with a confirmation.";
+"NSPhotoLibraryUsageDescription" = "Optionally choose a photo as private proof for a confirmation.";
