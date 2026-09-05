@@ -140,9 +140,136 @@ private enum class Tab(val icon: ImageVector) { Today(Icons.Default.CheckCircle)
     AlertDialog(onDismissRequest=close, title={Text(if(existing==null) tr("Neue Karte","New card") else tr("Karte bearbeiten","Edit card"),fontWeight=FontWeight.Bold)}, text={Column(Modifier.verticalScroll(rememberScrollState())) { OutlinedTextField(title,{title=it},Modifier.fillMaxWidth(),label={Text(tr("Was möchtest du bestätigen?","What would you like to confirm?"))}); OutlinedTextField(detail,{detail=it},Modifier.fillMaxWidth().padding(top=8.dp),label={Text(tr("Kurzer Hinweis","Short note"))}); Text(tr("Symbol","Icon"),fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=14.dp)); Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){icons.take(6).forEach{ Box(Modifier.size(38.dp).clickable{selectedIcon=it}.background(if(selectedIcon==it) Color(tint) else Color(tint).copy(alpha=.1f),RoundedCornerShape(11.dp)),contentAlignment=Alignment.Center){Icon(icon(it),null,tint=if(selectedIcon==it)Color.White else Color(tint),modifier=Modifier.size(20.dp))}}}; Text(tr("Farbe","Color"),fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=14.dp)); Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween){colors.forEach{c->Box(Modifier.size(28.dp).background(Color(c),CircleShape).clickable{tint=c},contentAlignment=Alignment.Center){if(tint==c)Icon(Icons.Default.Check,null,tint=Color.White,modifier=Modifier.size(16.dp))}}}; Text(tr("Zurücksetzen","Reset"),fontWeight=FontWeight.Bold,modifier=Modifier.padding(top=14.dp)); ResetRule.entries.forEach{rule->Row(Modifier.fillMaxWidth().clickable{reset=rule}.padding(vertical=5.dp),verticalAlignment=Alignment.CenterVertically){RadioButton(reset==rule,{reset=rule});Text(resetLabel(rule))}} }}, confirmButton={TextButton({save((existing?:Routine(title=title)).copy(title=title.trim(),detail=detail.trim(),icon=selectedIcon,tint=tint,reset=reset))},enabled=title.isNotBlank()){Text(if(existing==null)tr("Erstellen","Create")else tr("Speichern","Save"))}}, dismissButton={TextButton(close){Text(tr("Abbrechen","Cancel"))}})
 }
 
-@Composable private fun HistoryScreen(store: RoutineStore, refresh: Int, modifier: Modifier) { var query by remember{mutableStateOf("")}; val values=remember(refresh){store.history()}.filter{query.isBlank()||it.routineTitle.contains(query,true)}; LazyColumn(modifier.fillMaxSize().statusBarsPadding(),contentPadding=PaddingValues(18.dp,18.dp,18.dp,30.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){item{Text(tr("Verlauf","History"),fontSize=32.sp,fontWeight=FontWeight.Bold);OutlinedTextField(query,{query=it},Modifier.fillMaxWidth().padding(top=12.dp),placeholder={Text(tr("Verlauf durchsuchen","Search history"))},leadingIcon={Icon(Icons.Default.Search,null)})};if(values.isEmpty())item{EmptyState()}else items(values,key={it.id}){entry->Card(Modifier.fillMaxWidth(),colors=CardDefaults.cardColors(containerColor=Color.White),shape=RoundedCornerShape(19.dp),border=androidx.compose.foundation.BorderStroke(1.dp,Border)){Row(Modifier.padding(15.dp),verticalAlignment=Alignment.CenterVertically){Box(Modifier.size(46.dp).background(Green.copy(alpha=.12f),RoundedCornerShape(14.dp)),contentAlignment=Alignment.Center){Icon(Icons.Default.Check,tint=Green,contentDescription=null)};Column(Modifier.weight(1f).padding(start=13.dp)){Text(entry.routineTitle,fontWeight=FontWeight.Bold);Text(DateFormat.getDateTimeInstance(DateFormat.MEDIUM,DateFormat.SHORT).format(Date(entry.completedAt)),color=Secondary,fontSize=13.sp)};if(entry.photoUri!=null)Icon(Icons.Default.Image,null,tint=Purple)}}}}} }
+@Composable
+private fun HistoryScreen(store: RoutineStore, refresh: Int, modifier: Modifier) {
+    var query by remember { mutableStateOf("") }
+    val values = remember(refresh) { store.history() }
+        .filter { query.isBlank() || it.routineTitle.contains(query, true) }
+    LazyColumn(
+        modifier.fillMaxSize().statusBarsPadding(),
+        contentPadding = PaddingValues(18.dp, 18.dp, 18.dp, 30.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Text(tr("Verlauf", "History"), fontSize = 32.sp, fontWeight = FontWeight.Bold)
+            OutlinedTextField(
+                query,
+                { query = it },
+                Modifier.fillMaxWidth().padding(top = 12.dp),
+                placeholder = { Text(tr("Verlauf durchsuchen", "Search history")) },
+                leadingIcon = { Icon(Icons.Default.Search, null) }
+            )
+        }
+        if (values.isEmpty()) {
+            item { EmptyState() }
+        } else {
+            items(values, key = { it.id }) { entry ->
+                Card(
+                    Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    shape = RoundedCornerShape(19.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Border)
+                ) {
+                    Row(Modifier.padding(15.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier.size(46.dp).background(Green.copy(alpha = .12f), RoundedCornerShape(14.dp)),
+                            contentAlignment = Alignment.Center
+                        ) { Icon(Icons.Default.Check, tint = Green, contentDescription = null) }
+                        Column(Modifier.weight(1f).padding(start = 13.dp)) {
+                            Text(entry.routineTitle, fontWeight = FontWeight.Bold)
+                            Text(
+                                DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(entry.completedAt)),
+                                color = Secondary,
+                                fontSize = 13.sp
+                            )
+                        }
+                        if (entry.photoUri != null) Icon(Icons.Default.Image, null, tint = Purple)
+                    }
+                }
+            }
+        }
+    }
+}
 
-@Composable private fun SettingsScreen(store: RoutineStore, billing: BillingManager, state: BillingState, refresh: Int, reload: () -> Unit, modifier: Modifier) { val context=LocalContext.current;var name by remember(refresh){mutableStateOf(store.profileName)};var confirmRestore by remember{mutableStateOf(false)};val permission=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){granted->store.reminders=granted;reload()};LazyColumn(modifier.fillMaxSize().statusBarsPadding(),contentPadding=PaddingValues(18.dp,18.dp,18.dp,32.dp),verticalArrangement=Arrangement.spacedBy(14.dp)){item{Text(tr("Einstellungen","Settings"),fontSize=32.sp,fontWeight=FontWeight.Bold)};item{SettingsCard(tr("Profil","Profile"),Icons.Default.Person){OutlinedTextField(name,{name=it},Modifier.fillMaxWidth(),label={Text(tr("Dein Name","Your name"))});Button({store.profileName=name.trim();reload()},Modifier.fillMaxWidth().padding(top=8.dp)){Text(tr("Speichern","Save"))}}};item{SettingsCard(tr("Erinnerungen","Reminders"),Icons.Default.Notifications){Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Text(tr("Bei Rücksetzung erinnern","Notify when a card resets"),Modifier.weight(1f));Switch(store.reminders,{enabled->if(enabled)permission.launch(Manifest.permission.POST_NOTIFICATIONS)else{store.reminders=false;reload()}})}};item{SettingsCard("Schon erledigt? Pro",Icons.Default.WorkspacePremium){Text(if(state.pro)tr("Pro ist aktiv","Pro is active")else tr("Unbegrenzt Karten, Fotobelege und vollständiger Verlauf.","Unlimited cards, photo proof and complete history."),color=if(state.pro)Green else Secondary);if(!state.pro)Button({state.yearly?.let{billing.purchase(context as Activity,it)}},Modifier.fillMaxWidth().padding(top=10.dp),enabled=state.yearly!=null){Text(tr("Jahresabo freischalten","Unlock yearly Pro"))};state.lifetime?.let{product->OutlinedButton({billing.purchase(context as Activity,product)},Modifier.fillMaxWidth().padding(top=8.dp)){Text(tr("Dauerhaft freischalten","Unlock lifetime"))}};TextButton({billing.restore()},Modifier.fillMaxWidth()){Text(tr("Käufe wiederherstellen","Restore purchases"))}}};item{SettingsCard(tr("Daten","Data"),Icons.Default.Storage){Text("${store.routines().size} ${tr("Karten","cards")} · ${store.history().size} ${tr("Bestätigungen","confirmations")}",color=Secondary);OutlinedButton({confirmRestore=true},Modifier.fillMaxWidth().padding(top=8.dp)){Text(tr("Beispieldaten wiederherstellen","Restore sample data"))}}};item{SettingsCard(tr("Hilfe & Rechtliches","Help & legal"),Icons.Default.Help){LinkRow(tr("Datenschutz","Privacy policy")){open(context,if(german)"https://kamilunavo.com/schon-erledigt/datenschutz"else"https://kamilunavo.com/schon-erledigt/privacy")};LinkRow(tr("Support","Support")){open(context,"https://kamilunavo.com/schon-erledigt/support")};Text(tr("Wichtiger Hinweis: Die App dokumentiert deine Eingaben. Sie kann reale Zustände nicht prüfen.","Important: The app records your input. It cannot verify real-world conditions."),fontSize=12.sp,color=Secondary,modifier=Modifier.padding(top=10.dp))}}};if(confirmRestore)AlertDialog({confirmRestore=false},title={Text(tr("Alle eigenen Daten ersetzen?","Replace all your data?"))},text={Text(tr("Karten und Verlauf werden durch Beispieldaten ersetzt.","Cards and history will be replaced with sample data."))},confirmButton={TextButton({store.restoreSamples();confirmRestore=false;reload()}){Text(tr("Wiederherstellen","Restore"))}},dismissButton={TextButton({confirmRestore=false}){Text(tr("Abbrechen","Cancel"))}}) }
+@Composable
+private fun SettingsScreen(store: RoutineStore, billing: BillingManager, state: BillingState, refresh: Int, reload: () -> Unit, modifier: Modifier) {
+    val context = LocalContext.current
+    var name by remember(refresh) { mutableStateOf(store.profileName) }
+    var confirmRestore by remember { mutableStateOf(false) }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        store.reminders = granted
+        reload()
+    }
+    LazyColumn(
+        modifier.fillMaxSize().statusBarsPadding(),
+        contentPadding = PaddingValues(18.dp, 18.dp, 18.dp, 32.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        item { Text(tr("Einstellungen", "Settings"), fontSize = 32.sp, fontWeight = FontWeight.Bold) }
+        item {
+            SettingsCard(tr("Profil", "Profile"), Icons.Default.Person) {
+                OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(), label = { Text(tr("Dein Name", "Your name")) })
+                Button({ store.profileName = name.trim(); reload() }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(tr("Speichern", "Save")) }
+            }
+        }
+        item {
+            SettingsCard(tr("Erinnerungen", "Reminders"), Icons.Default.Notifications) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(tr("Bei Rücksetzung erinnern", "Notify when a card resets"), Modifier.weight(1f))
+                    Switch(store.reminders) { enabled ->
+                        if (enabled) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        else { store.reminders = false; reload() }
+                    }
+                }
+            }
+        }
+        item {
+            SettingsCard("Schon erledigt? Pro", Icons.Default.WorkspacePremium) {
+                Text(
+                    if (state.pro) tr("Pro ist aktiv", "Pro is active") else tr("Unbegrenzt Karten, Fotobelege und vollständiger Verlauf.", "Unlimited cards, photo proof and complete history."),
+                    color = if (state.pro) Green else Secondary
+                )
+                if (!state.pro) Button(
+                    { state.yearly?.let { billing.purchase(context as Activity, it) } },
+                    Modifier.fillMaxWidth().padding(top = 10.dp),
+                    enabled = state.yearly != null
+                ) { Text(tr("Jahresabo freischalten", "Unlock yearly Pro")) }
+                state.lifetime?.let { product ->
+                    OutlinedButton(
+                        { billing.purchase(context as Activity, product) },
+                        Modifier.fillMaxWidth().padding(top = 8.dp)
+                    ) { Text(tr("Dauerhaft freischalten", "Unlock lifetime")) }
+                }
+                TextButton({ billing.restore() }, Modifier.fillMaxWidth()) { Text(tr("Käufe wiederherstellen", "Restore purchases")) }
+            }
+        }
+        item {
+            SettingsCard(tr("Daten", "Data"), Icons.Default.Storage) {
+                Text("${store.routines().size} ${tr("Karten", "cards")} · ${store.history().size} ${tr("Bestätigungen", "confirmations")}", color = Secondary)
+                OutlinedButton({ confirmRestore = true }, Modifier.fillMaxWidth().padding(top = 8.dp)) { Text(tr("Beispieldaten wiederherstellen", "Restore sample data")) }
+            }
+        }
+        item {
+            SettingsCard(tr("Hilfe & Rechtliches", "Help & legal"), Icons.Default.Help) {
+                LinkRow(tr("Datenschutz", "Privacy policy")) { open(context, if (german) "https://kamilunavo.com/schon-erledigt/datenschutz" else "https://kamilunavo.com/schon-erledigt/privacy") }
+                LinkRow(tr("Support", "Support")) { open(context, "https://kamilunavo.com/schon-erledigt/support") }
+                Text(
+                    tr("Wichtiger Hinweis: Die App dokumentiert deine Eingaben. Sie kann reale Zustände nicht prüfen.", "Important: The app records your input. It cannot verify real-world conditions."),
+                    fontSize = 12.sp,
+                    color = Secondary,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
+            }
+        }
+    }
+    if (confirmRestore) AlertDialog(
+        onDismissRequest = { confirmRestore = false },
+        title = { Text(tr("Alle eigenen Daten ersetzen?", "Replace all your data?")) },
+        text = { Text(tr("Karten und Verlauf werden durch Beispieldaten ersetzt.", "Cards and history will be replaced with sample data.")) },
+        confirmButton = { TextButton({ store.restoreSamples(); confirmRestore = false; reload() }) { Text(tr("Wiederherstellen", "Restore")) } },
+        dismissButton = { TextButton({ confirmRestore = false }) { Text(tr("Abbrechen", "Cancel")) } }
+    )
+}
 
 @Composable private fun Paywall(state: BillingState, billing: BillingManager, close:()->Unit){val context=LocalContext.current;AlertDialog(close,title={Text("Schon erledigt? Pro",fontWeight=FontWeight.Bold)},text={Column{listOf(tr("Unbegrenzt viele Karten","Unlimited cards"),tr("Fotobelege und vollständiger Verlauf","Photo proof and complete history"),tr("Erinnerungen bei Rücksetzung","Reset reminders")).forEach{Row(Modifier.padding(vertical=5.dp)){Icon(Icons.Default.Check,null,tint=Green);Text(it,Modifier.padding(start=8.dp))}};state.yearly?.let{Button({billing.purchase(context as Activity,it)},Modifier.fillMaxWidth().padding(top=10.dp)){Text(it.name)}};state.lifetime?.let{OutlinedButton({billing.purchase(context as Activity,it)},Modifier.fillMaxWidth().padding(top=8.dp)){Text(it.name)}}}},confirmButton={TextButton(close){Text(tr("Fertig","Done"))}}) }
 

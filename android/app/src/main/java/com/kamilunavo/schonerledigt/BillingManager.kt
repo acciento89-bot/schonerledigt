@@ -21,16 +21,30 @@ class BillingManager(context: Context) {
         const val LIFETIME = "com.kamilunavo.schonerledigt.pro.lifetime"
     }
     val state = MutableStateFlow(BillingState())
-    private val client = BillingClient.newBuilder(context).enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build()).setListener { result, purchases ->
-        if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) purchases.forEach { purchase ->
-            if (purchase.purchaseState == com.android.billingclient.api.Purchase.PurchaseState.PURCHASED) {
-                state.value = state.value.copy(pro = true)
-                if (!purchase.isAcknowledged) client.acknowledgePurchase(AcknowledgePurchaseParams.newBuilder().setPurchaseToken(purchase.purchaseToken).build()) {}
-            }
-        }
-    }.build()
+    private lateinit var client: BillingClient
 
-    init { connect() }
+    init {
+        client = BillingClient.newBuilder(context)
+            .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+            .setListener { result, purchases ->
+                if (result.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
+                    purchases.forEach { purchase ->
+                        if (purchase.purchaseState == com.android.billingclient.api.Purchase.PurchaseState.PURCHASED) {
+                            state.value = state.value.copy(pro = true)
+                            if (!purchase.isAcknowledged) {
+                                client.acknowledgePurchase(
+                                    AcknowledgePurchaseParams.newBuilder()
+                                        .setPurchaseToken(purchase.purchaseToken)
+                                        .build()
+                                ) {}
+                            }
+                        }
+                    }
+                }
+            }
+            .build()
+        connect()
+    }
     private fun connect() = client.startConnection(object : BillingClientStateListener {
         override fun onBillingServiceDisconnected() { state.value = state.value.copy(ready = false) }
         override fun onBillingSetupFinished(result: BillingResult) { if (result.responseCode == BillingClient.BillingResponseCode.OK) { state.value = state.value.copy(ready = true); loadProducts(); restore() } }
