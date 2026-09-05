@@ -1,0 +1,42 @@
+name: SchonErledigt Android CI
+on:
+  push:
+    branches: ['android/**']
+    paths: ['android/**', '.github/workflows/android-ci.yml']
+  pull_request:
+    paths: ['android/**', '.github/workflows/android-ci.yml']
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: '9.5.0' }
+      - run: gradle -p android testDebugUnitTest --stacktrace
+      - run: gradle -p android bundleDebug --stacktrace
+      - run: gradle -p android bundleRelease --stacktrace
+      - name: Verify Play release and native design
+        run: |
+          set -euo pipefail
+          test -f android/app/build/outputs/bundle/release/app-release.aab
+          grep -Fq 'applicationId = "com.kamilunavo.schonerledigt"' android/app/build.gradle.kts
+          grep -Fq 'versionCode = 4' android/app/build.gradle.kts
+          grep -Fq 'versionName = "1.0.1"' android/app/build.gradle.kts
+          grep -Fq 'targetSdk = 36' android/app/build.gradle.kts
+          grep -Fq 'com.android.billingclient:billing-ktx:9.1.0' android/app/build.gradle.kts
+          grep -Fq 'com.kamilunavo.schonerledigt.pro.yearly' android/app/src/main/java/com/kamilunavo/schonerledigt/BillingManager.kt
+          grep -Fq 'com.kamilunavo.schonerledigt.pro.lifetime' android/app/src/main/java/com/kamilunavo/schonerledigt/BillingManager.kt
+          if grep -RFn --include='*.kt' -e 'AndroidView(' -e 'WebView(' android/app/src/main/java; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SchonErledigt-1.0.1-4-unsigned-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7
