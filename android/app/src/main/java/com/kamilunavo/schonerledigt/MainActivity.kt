@@ -216,10 +216,10 @@ private fun SettingsScreen(store: RoutineStore, billing: BillingManager, state: 
             SettingsCard(tr("Erinnerungen", "Reminders"), Icons.Default.Notifications) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(tr("Bei Rücksetzung erinnern", "Notify when a card resets"), Modifier.weight(1f))
-                    Switch(store.reminders) { enabled ->
+                    Switch(checked = store.reminders, onCheckedChange = { enabled ->
                         if (enabled) permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                         else { store.reminders = false; reload() }
-                    }
+                    })
                 }
             }
         }
