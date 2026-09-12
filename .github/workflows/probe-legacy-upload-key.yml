@@ -1,0 +1,39 @@
+name: Probe legacy Play upload certificate
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/probe-legacy-upload-key.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-java@v5
+        with: {distribution: temurin, java-version: '17'}
+      - name: Report legacy certificate fingerprint only
+        shell: bash
+        env:
+          K1: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          K2: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+          K3: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          K4: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          P1: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          P2: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          P3: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          P4: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          b64=''; source=''
+          for item in K1 K2 K3 K4; do value=${!item:-}; if [ -n "$value" ]; then b64="$value"; source="$item"; break; fi; done
+          pass=''
+          for item in P1 P2 P3 P4; do value=${!item:-}; if [ -n "$value" ]; then pass="$value"; break; fi; done
+          if [ -z "$b64" ] || [ -z "$pass" ]; then echo 'NO_LEGACY_KEY_MATERIAL'; exit 0; fi
+          echo "FOUND_LEGACY_KEY_MATERIAL:$source"
+          printf '%s' "$b64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          keytool -list -v -keystore "$RUNNER_TEMP/upload.jks" -storepass "$pass" | grep -E 'SHA1:|SHA256:'
+          rm -f "$RUNNER_TEMP/upload.jks"
