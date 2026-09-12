@@ -11,9 +11,14 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: google-play-schonerledigt
+  cancel-in-progress: false
+
 env:
   PACKAGE_NAME: com.kamilunavo.schonerledigt
   EXPECTED_VERSION_CODE: '5'
+  CENTRAL_UPLOAD_SHA1: BCF2337D41E617C03BCAE698C09D1523654BD790
   WIF_PROVIDER: projects/1058001477767/locations/global/workloadIdentityPools/github/providers/github-actions
   GOOGLE_SERVICE_ACCOUNT: navoops@emerald-caster-508318-f2.iam.gserviceaccount.com
 
@@ -23,26 +28,57 @@ jobs:
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
+        with: {persist-credentials: false}
+      - name: Check central upload-key migration gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          state=$(curl -fsSL https://raw.githubusercontent.com/acciento89-bot/maengelfix/main/generated/signing-central/android-upload-key-migration.json)
+          status=$(jq -er --arg p "$PACKAGE_NAME" '.apps[] | select(.package == $p) | .status' <<<"$state")
+          target=$(jq -er '.target_upload_certificate_sha1' <<<"$state")
+          test "$target" = "$CENTRAL_UPLOAD_SHA1"
+          if [ "$status" = 'ACTIVE' ]; then
+            echo 'MIGRATION_READY=true' >> "$GITHUB_ENV"
+          else
+            echo 'MIGRATION_READY=false' >> "$GITHUB_ENV"
+            echo "Schon erledigt central upload-key migration is prepared but Play reset is not marked ACTIVE yet ($status). No build/upload attempted." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - uses: actions/setup-java@v5
+        if: env.MIGRATION_READY == 'true'
         with: {distribution: temurin, java-version: '17'}
       - uses: android-actions/setup-android@v3
+        if: env.MIGRATION_READY == 'true'
       - uses: gradle/actions/setup-gradle@v4
+        if: env.MIGRATION_READY == 'true'
         with: {gradle-version: '9.5.0'}
-      - name: Restore upload identity from KMS vault
-        uses: acciento89-bot/maengelfix/.github/actions/restore-android-signing@main
-        with: {app-id: schonerledigt}
-      - name: Build and verify signed release bundle
+      - name: Restore central Kamilunavo upload identity
+        if: env.MIGRATION_READY == 'true'
+        uses: acciento89-bot/maengelfix/.github/actions/restore-central-android-signing@main
+      - name: Reject any signing identity except the central key
+        if: env.MIGRATION_READY == 'true'
+        shell: bash
+        run: test "$KAMILUNAVO_CENTRAL_UPLOAD_SHA1" = "$CENTRAL_UPLOAD_SHA1"
+      - name: Build and verify centrally signed release bundle
+        if: env.MIGRATION_READY == 'true'
         shell: bash
         run: |
           set -euo pipefail
           sdkmanager 'platforms;android-36' 'build-tools;36.0.0' >/dev/null
           gradle -p android bundleRelease --stacktrace
           AAB='android/app/build/outputs/bundle/release/app-release.aab'; test -s "$AAB"
-          if ! jarsigner -verify "$AAB" 2>/dev/null | grep -Fq 'jar verified.'; then jarsigner -keystore "$ANDROID_UPLOAD_KEYSTORE_PATH" -storepass "$ANDROID_UPLOAD_KEYSTORE_PASSWORD" -keypass "$ANDROID_UPLOAD_KEY_PASSWORD" "$AAB" "$ANDROID_UPLOAD_KEY_ALIAS"; fi
+          if jarsigner -verify "$AAB" 2>/dev/null | grep -Fq 'jar verified.'; then
+            echo '::error::Release bundle unexpectedly arrived already signed; refusing to add a second signer.'
+            exit 1
+          fi
+          jarsigner -keystore "$ANDROID_UPLOAD_KEYSTORE_PATH" -storepass:env ANDROID_UPLOAD_KEYSTORE_PASSWORD -keypass:env ANDROID_UPLOAD_KEY_PASSWORD "$AAB" "$ANDROID_UPLOAD_KEY_ALIAS"
           jarsigner -verify "$AAB" | grep -Fq 'jar verified.'
+          keytool -J-Duser.language=en -printcert -jarfile "$AAB" > "$RUNNER_TEMP/bundle-cert.txt"
+          actual=$(sed -n 's/^[[:space:]]*SHA1: //p' "$RUNNER_TEMP/bundle-cert.txt" | tr -d ':\r\n ')
+          test "$actual" = "$CENTRAL_UPLOAD_SHA1"
           grep -Fq 'versionCode = 5' android/app/build.gradle.kts
           echo "AAB_PATH=$AAB" >> "$GITHUB_ENV"
       - id: google-auth
+        if: env.MIGRATION_READY == 'true'
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
@@ -50,6 +86,7 @@ jobs:
           token_format: access_token
           access_token_scopes: https://www.googleapis.com/auth/androidpublisher
       - name: Check whether version already exists
+        if: env.MIGRATION_READY == 'true'
         env: {TOKEN: '${{ steps.google-auth.outputs.access_token }}'}
         shell: bash
         run: |
@@ -60,7 +97,7 @@ jobs:
           if jq -e --argjson code "$EXPECTED_VERSION_CODE" '.bundles | any(.versionCode == $code)' <<<"$bundles" >/dev/null; then echo 'ALREADY_PRESENT=true' >> "$GITHUB_ENV"; else echo 'ALREADY_PRESENT=false' >> "$GITHUB_ENV"; fi
           curl -fsS -X DELETE -H "Authorization: Bearer $TOKEN" "$api/applications/$PACKAGE_NAME/edits/$edit" >/dev/null
       - name: Upload and verify Play bundle
-        if: env.ALREADY_PRESENT != 'true'
+        if: env.MIGRATION_READY == 'true' && env.ALREADY_PRESENT != 'true'
         env: {TOKEN: '${{ steps.google-auth.outputs.access_token }}'}
         shell: bash
         run: |
@@ -70,7 +107,7 @@ jobs:
           body=$(mktemp); status=$(curl -sS -o "$body" -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/octet-stream' --data-binary "@$AAB_PATH" "$upload/applications/$PACKAGE_NAME/edits/$edit/bundles?uploadType=media")
           if [[ "$status" != 200 ]]; then cat "$body" >&2; curl -sS -X DELETE -H "Authorization: Bearer $TOKEN" "$api/applications/$PACKAGE_NAME/edits/$edit" >/dev/null || true; exit 1; fi
           test "$(jq -r '.versionCode' "$body")" = "$EXPECTED_VERSION_CODE"
-          status=$(curl -sS -o "$body" -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}' "$api/applications/$PACKAGE_NAME/edits/$edit:commit")
+          status=$(curl -sS -o "$body" -w '%{http_code}' -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}' "$api/applications/$PACKAGE_NAME/edits/$edit:commit?changesNotSentForReview=true")
           [[ "$status" == 2* ]] || { cat "$body" >&2; exit 1; }
           fresh=$(curl -fsS -X POST -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' -d '{}' "$api/applications/$PACKAGE_NAME/edits" | jq -r '.id')
           curl -fsS -H "Authorization: Bearer $TOKEN" "$api/applications/$PACKAGE_NAME/edits/$fresh/bundles" | jq -e --argjson code "$EXPECTED_VERSION_CODE" '.bundles | any(.versionCode == $code)' >/dev/null
@@ -79,5 +116,5 @@ jobs:
         if: always()
         shell: bash
         run: |
-          rm -f "$RUNNER_TEMP/kamilunavo-upload.jks"
-          rm -rf "$RUNNER_TEMP/kamilunavo-signing-vault"
+          rm -rf "$RUNNER_TEMP/kamilunavo-central-signing"
+          rm -f "$RUNNER_TEMP/kamilunavo-central-upload.p12" "$RUNNER_TEMP/bundle-cert.txt"
