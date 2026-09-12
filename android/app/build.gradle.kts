@@ -1,5 +1,13 @@
 plugins { id("com.android.application"); id("org.jetbrains.kotlin.plugin.compose") }
 
+val launcherResDir = file("src/main/res/drawable-nodpi")
+val generatedLauncherIcon = launcherResDir.resolve("schonerledigt_store_icon.png")
+val generateStoreLauncherIcon by tasks.registering(Copy::class) {
+    from(rootProject.projectDir.parentFile.resolve("store/google-play/icon-512.png"))
+    into(launcherResDir)
+    rename { "schonerledigt_store_icon.png" }
+}
+
 android {
     namespace = "com.kamilunavo.schonerledigt"
     compileSdk = 36
@@ -7,12 +15,24 @@ android {
         applicationId = "com.kamilunavo.schonerledigt"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "1.0.1"
+        versionCode = 5
+        versionName = "1.0.2"
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     buildTypes { release { isMinifyEnabled = true; isShrinkResources = true; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") } }
+}
+
+tasks.named("preBuild").configure { dependsOn(generateStoreLauncherIcon) }
+
+tasks.register("verifyLauncherIconParity") {
+    dependsOn(generateStoreLauncherIcon)
+    doLast {
+        val storeIcon = rootProject.projectDir.parentFile.resolve("store/google-play/icon-512.png")
+        check(storeIcon.readBytes().contentEquals(generatedLauncherIcon.readBytes())) {
+            "SchonErledigt Android launcher must be byte-identical to the Google Play icon"
+        }
+    }
 }
 
 dependencies {
