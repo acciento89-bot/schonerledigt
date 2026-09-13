@@ -2,8 +2,9 @@ plugins { id("com.android.application"); id("org.jetbrains.kotlin.plugin.compose
 
 val launcherResDir = file("src/main/res/drawable-nodpi")
 val generatedLauncherIcon = launcherResDir.resolve("schonerledigt_store_icon.png")
-val generateStoreLauncherIcon by tasks.registering(Copy::class) {
-    from(rootProject.projectDir.parentFile.resolve("store/google-play/icon-512.png"))
+val iosLauncherIcon = rootProject.projectDir.parentFile.resolve("SchonErledigt/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png")
+val generateIosLauncherIcon by tasks.registering(Copy::class) {
+    from(iosLauncherIcon)
     into(launcherResDir)
     rename { "schonerledigt_store_icon.png" }
 }
@@ -23,14 +24,13 @@ android {
     buildTypes { release { isMinifyEnabled = true; isShrinkResources = true; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") } }
 }
 
-tasks.named("preBuild").configure { dependsOn(generateStoreLauncherIcon) }
+tasks.named("preBuild").configure { dependsOn(generateIosLauncherIcon) }
 
 tasks.register("verifyLauncherIconParity") {
-    dependsOn(generateStoreLauncherIcon)
+    dependsOn(generateIosLauncherIcon)
     doLast {
-        val storeIcon = rootProject.projectDir.parentFile.resolve("store/google-play/icon-512.png")
-        check(storeIcon.readBytes().contentEquals(generatedLauncherIcon.readBytes())) {
-            "SchonErledigt Android launcher must be byte-identical to the Google Play icon"
+        check(iosLauncherIcon.readBytes().contentEquals(generatedLauncherIcon.readBytes())) {
+            "SchonErledigt Android launcher must be byte-identical to the iOS AppIcon"
         }
     }
 }

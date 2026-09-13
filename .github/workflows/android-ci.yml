@@ -2,9 +2,9 @@ name: SchonErledigt Android CI
 on:
   push:
     branches: [main, 'android/**']
-    paths: ['android/**', 'store/google-play/**', '.github/workflows/android-ci.yml']
+    paths: ['android/**', 'SchonErledigt/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png', 'store/google-play/**', '.github/workflows/android-ci.yml']
   pull_request:
-    paths: ['android/**', 'store/google-play/**', '.github/workflows/android-ci.yml']
+    paths: ['android/**', 'SchonErledigt/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png', 'store/google-play/**', '.github/workflows/android-ci.yml']
   workflow_dispatch:
 permissions: { contents: read }
 jobs:
@@ -19,15 +19,19 @@ jobs:
       - run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - uses: gradle/actions/setup-gradle@v4
         with: { gradle-version: '9.5.0' }
-      - name: Verify exact Store/launcher identity
+      - name: Verify exact iOS/Android launcher identity
         run: |
           set -euo pipefail
           test -s store/google-play/icon-512.png
           grep -Fq 'android:icon="@drawable/schonerledigt_store_icon"' android/app/src/main/AndroidManifest.xml
-          grep -Fq 'android:roundIcon="@drawable/schonerledigt_store_icon"' android/app/src/main/AndroidManifest.xml
+          ! grep -Fq 'android:roundIcon=' android/app/src/main/AndroidManifest.xml
+          test ! -e android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          test ! -e android/app/src/main/res/drawable/ic_launcher.xml
+          test ! -e android/app/src/main/res/drawable/launcher_background.xml
+          test ! -e android/app/src/main/res/drawable/launcher_foreground.xml
           gradle -p android verifyLauncherIconParity
-          cmp -s store/google-play/icon-512.png android/app/src/main/res/drawable-nodpi/schonerledigt_store_icon.png
-          sha256sum store/google-play/icon-512.png android/app/src/main/res/drawable-nodpi/schonerledigt_store_icon.png
+          cmp -s SchonErledigt/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png android/app/src/main/res/drawable-nodpi/schonerledigt_store_icon.png
+          sha256sum SchonErledigt/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png android/app/src/main/res/drawable-nodpi/schonerledigt_store_icon.png store/google-play/icon-512.png
       - run: gradle -p android testDebugUnitTest --stacktrace
       - run: gradle -p android bundleDebug --stacktrace
       - run: gradle -p android bundleRelease --stacktrace
