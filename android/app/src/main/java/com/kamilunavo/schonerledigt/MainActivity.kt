@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.DateFormat
 import java.util.Date
-import java.util.Locale
 
 private val Purple = Color(0xFF6C63FF)
 private val Green = Color(0xFF28BFA3)
@@ -46,12 +45,14 @@ private val Ink = Color(0xFF151821)
 private val Canvas = Color(0xFFF4F5F8)
 private val Border = Color(0xFFE5E7EC)
 private val Secondary = Color(0xFF68707F)
-private val german get() = Locale.getDefault().language == "de"
+private var german = false
 private fun tr(de: String, en: String) = if (german) de else en
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState); enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        german = resources.configuration.locales[0].language == "de"
+        enableEdgeToEdge()
         setContent { SchonTheme { SchonApp() } }
     }
 }
@@ -80,7 +81,7 @@ class MainActivity : ComponentActivity() {
     )
     var page by remember { mutableIntStateOf(0) }
     Box(Modifier.fillMaxSize().background(Brush.linearGradient(listOf(Color(0xFFF3F1FF), Color.White))).statusBarsPadding()) {
-        Column(Modifier.fillMaxSize().padding(22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(Modifier.fillMaxSize().padding(22.dp).navigationBarsPadding(), horizontalAlignment = Alignment.CenterHorizontally) {
             Spacer(Modifier.weight(1f))
             Box(Modifier.size(142.dp).background(Purple.copy(alpha = .12f), CircleShape), contentAlignment = Alignment.Center) { Icon(pages[page].first, null, tint = Purple, modifier = Modifier.size(64.dp)) }
             Text(pages[page].second, color = Ink, fontSize = 34.sp, lineHeight = 39.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 28.dp))
