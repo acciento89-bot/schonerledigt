@@ -82,7 +82,12 @@ test -s "$apk_path"
 adb install -r "$apk_path"
 adb shell settings put system accelerometer_rotation 0
 adb shell settings put system user_rotation 0
-adb shell cmd locale set-app-locales "$PACKAGE_NAME" --user 0 de-DE || true
+adb shell cmd locale set-app-locales "$PACKAGE_NAME" --user 0 --locales de-DE
+app_locales="$(adb shell cmd locale get-app-locales "$PACKAGE_NAME" --user 0)"
+if [[ "$app_locales" != *"[de-DE]"* ]]; then
+  echo "Failed to activate German app locale: $app_locales" >&2
+  exit 1
+fi
 
 launch_app
 adb exec-out screencap -p > "$output_dir/01-current-ui.png"
