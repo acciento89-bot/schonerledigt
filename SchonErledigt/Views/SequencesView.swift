@@ -133,11 +133,13 @@ private struct SequenceDetailView: View {
                     store.complete(routine)
                     let observedAt = Date.now
                     sequences.observe(cards: cards(at: observedAt), at: observedAt)
-                }.disabled(index != progress || sequences.loadFailed)
+                }.buttonStyle(.borderless)
+                .disabled(index != progress || sequences.loadFailed)
                 Button("sequence.photo", systemImage: "camera") {
                     guard let routine, group.eligibleStepID(cards: cards()) == step.routineID else { sequences.errorKey = "sequence.changed"; return }
                     if purchases.hasPro { evidenceRoutine = routine } else { paywall = true }
-                }.disabled(index != progress || sequences.loadFailed)
+                }.buttonStyle(.borderless)
+                .disabled(index != progress || sequences.loadFailed)
             }
         }.padding(.vertical, 6)
     }
