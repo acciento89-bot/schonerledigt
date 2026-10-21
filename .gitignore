@@ -3,3 +3,10 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 
+
+# Local Android build state
+android/.gradle/
+android/.kotlin/
+android/app/build/
+android/build/
+android/local.properties
