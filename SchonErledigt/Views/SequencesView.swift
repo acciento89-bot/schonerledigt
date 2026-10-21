@@ -191,6 +191,7 @@ private struct SequenceEditor: View {
                 }
                 Section { Text(LocalizedStringKey(sequenceID == nil ? "sequence.startHint" : "sequence.editHint")).font(.footnote); Text("sequence.localNotice").font(.footnote) }
             }
+            .keyboardDoneToolbar()
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle(Text(LocalizedStringKey(sequenceID == nil ? "sequence.new" : "sequence.edit")))
             .toolbar {
@@ -237,6 +238,8 @@ private struct SequenceHandoverEditor: View {
                 Section("sequence.handoverNote") { TextField("sequence.handoverNote", text: $note, axis: .vertical).lineLimit(3...8) }
                 Section { Text("sequence.handoverHint").font(.footnote) }
             }
+            .keyboardDoneToolbar()
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("sequence.handover")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Abbrechen") { dismiss() } }
