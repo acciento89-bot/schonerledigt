@@ -7,3 +7,5 @@ The controller requires exact package/version, owned emulator serial/API/QEMU an
 Only the bounded allowlisted own synthetic archive/PNG/log files are retained in an encrypted CMS, using the existing pinned public diagnostic certificate. Raw evidence is not uploaded. The workflow never signs or submits anything to a store. The new manual signer separately accepts only a successful immutable exact-main CI artifact/digest for 1.1.0(6), revalidates the existing central certificate/payload and publishes a signed artifact without Play upload. The legacy automatic screenshot and old signing triggers are removed to keep device use serial.
 
 Validation: six existing household-domain JUnit tests, real local debug/test APK compilation, fifteen controller/cleanup/encryption checks. Actual native acceptance and final distribution are separate gates.
+
+The manual native lane reuses the already registered `android-store-screenshots.yml` workflow identity so a feature ref can be validated before integration. Its former automatic screenshot behavior is replaced, not run alongside the new test.
