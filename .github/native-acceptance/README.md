@@ -1,0 +1,11 @@
+# Single-device Android acceptance
+
+Manual-only, one disposable Google APIs API35 Pixel7, no Play account or transaction. Builds the exact debug candidate plus Compose instrumentation tests; the first method exercises real onboarding, existing card confirmations, a saved ordered three-card sequence, unsaved editor recreation, partial handover, completion and next-round rotation. It reads actual app archives without inserting fixtures or granting Pro. A separate external force-stop and second instrumentation invocation exercise cold persistence, preserving the archive bytes and original card history. Compose semantics actions prove app interaction/state; they do not claim physical keyboard input, iOS/Duo behavior or photo/paid functionality.
+
+The controller requires exact package/version, owned emulator serial/API/QEMU and clean SystemUI preflight. Source/unit checks never stand in for native acceptance. Both methods, expected actual PNGs and an unchanged cold archive are required for PASS. Native failures retain failure. No ANR dismissal or UI recovery is performed. The exact owned AVD and serial must disappear in successful inventory commands even after failures. The shared local Duo is never addressed.
+
+Only the bounded allowlisted own synthetic archive/PNG/log files are retained in an encrypted CMS, using the existing pinned public diagnostic certificate. Raw evidence is not uploaded. The workflow never signs or submits anything to a store. The new manual signer separately accepts only a successful immutable exact-main CI artifact/digest for 1.1.0(6), revalidates the existing central certificate/payload and publishes a signed artifact without Play upload. The legacy automatic screenshot and old signing triggers are removed to keep device use serial.
+
+Validation: six existing household-domain JUnit tests, real local debug/test APK compilation, fifteen controller/cleanup/encryption checks. Actual native acceptance and final distribution are separate gates.
+
+The manual native lane reuses the already registered `android-store-screenshots.yml` workflow identity so a feature ref can be validated before integration. Its former automatic screenshot behavior is replaced, not run alongside the new test.

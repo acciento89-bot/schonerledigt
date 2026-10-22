@@ -21,6 +21,9 @@ private struct MainTabView: View {
             NavigationStack { HomeView() }
                 .tabItem { Label("Heute", systemImage: "checkmark.circle.fill") }
 
+            NavigationStack { SequencesView() }
+                .tabItem { Label("sequence.title", systemImage: "list.number") }
+
             NavigationStack { HistoryView() }
                 .tabItem { Label("Verlauf", systemImage: "clock.arrow.circlepath") }
 

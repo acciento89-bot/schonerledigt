@@ -1,71 +1,54 @@
-name: SchonErledigt Android Store Screenshots
-
+name: SchonErledigt actual ordered sequence and cold reopen (manual)
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - "android/**"
-      - ".github/workflows/android-store-screenshots.yml"
-      - ".github/scripts/capture-android-store-screenshots.sh"
-  push:
-    branches: [main]
-    paths:
-      - "android/**"
-      - ".github/workflows/android-store-screenshots.yml"
-      - ".github/scripts/capture-android-store-screenshots.sh"
-
-permissions:
-  contents: write
-
+permissions: {contents: read}
+concurrency:
+  group: schon-native-acceptance
+  cancel-in-progress: false
 jobs:
-  capture:
+  native:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
+        with: {persist-credentials: false}
+      - name: Record exact source and validate controller
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/schon-native-acceptance/schon"
+          git rev-parse HEAD > "$RUNNER_TEMP/schon-native-acceptance/schon/source-commit.txt"
+          python3 -m unittest discover -s .github/native-acceptance/tests -v
       - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
+        with: {distribution: temurin, java-version: '17'}
       - uses: android-actions/setup-android@v3
+        with: {packages: platform-tools}
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.5.0"
-
-      - name: Build local debug APK
-        run: gradle -p android --no-daemon assembleDebug --stacktrace
-
-      - name: Enable KVM acceleration
-        run: sudo chmod 666 /dev/kvm
-
-      - name: Capture exact current SchonErledigt UI
+        with: {gradle-version: '9.5.0'}
+      - name: Build real candidate and native tests
+        run: |
+          set -euo pipefail
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+          gradle -p android --no-daemon --max-workers=1 testDebugUnitTest assembleDebug assembleDebugAndroidTest > "$RUNNER_TEMP/schon-native-acceptance/schon/build.log" 2>&1
+      - name: Enable official KVM
+        run: test -e /dev/kvm && sudo chmod 666 /dev/kvm
+      - name: Actual free-user native UI and process cold reopen
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
+          target: google_apis
           arch: x86_64
           profile: pixel_7
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          avd-name: SchonNativeAcceptance-35
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 2048
           disable-animations: true
-          script: PACKAGE_NAME='com.kamilunavo.schonerledigt' APK_PATH='android/app/build/outputs/apk/debug/app-debug.apk' OUTPUT_DIR='store/google-play/screenshots/de-DE' WAIT_TEXT='Nicht mehr zweimal fragen' SECOND_ACTION='tap' SECOND_TEXT='Weiter' SECOND_WAIT_TEXT='Bereit für den nächsten Tag' bash "$GITHUB_WORKSPACE/.github/scripts/capture-android-store-screenshots.sh"
-
-      - name: Upload authentic screenshots
-        uses: actions/upload-artifact@v4
+          script: bash .github/native-acceptance/run-cloud.sh
+      - name: Encrypt bounded actual evidence
+        if: always()
+        run: python3 .github/native-acceptance/encrypt_evidence.py "$RUNNER_TEMP/schon-native-acceptance/schon" "$RUNNER_TEMP/schon-native-encrypted/schon/acceptance.cms"
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: SchonErledigt-Play-Store-Screenshots-de-DE
-          path: store/google-play/screenshots/de-DE/*.png
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Persist authentic screenshots
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: |
-          git config user.name 'Kamilunavo Release Bot'
-          git config user.email 'actions@users.noreply.github.com'
-          git add store/google-play/screenshots/de-DE
-          if ! git diff --cached --quiet; then
-            git commit -m 'Store authentic SchonErledigt Android screenshots'
-            git push origin HEAD:main
-          fi
-
+          name: Schon-native-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/schon-native-encrypted/schon/acceptance.cms
+          if-no-files-found: warn
+          retention-days: 7

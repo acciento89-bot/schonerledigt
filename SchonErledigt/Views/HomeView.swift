@@ -17,7 +17,7 @@ struct HomeView: View {
                     allDoneCard
                 } else {
                     sectionTitle("Noch offen", count: store.openRoutines.count)
-                    ForEach(store.openRoutines) { routine in
+                    ForEach(store.openRoutines, id: \.openHomeRowID) { routine in
                         RoutineCard(routine: routine, completed: false, onPhotoRequested: {
                             if purchases.hasPro { evidenceRoutine = routine } else { showsPaywall = true }
                         }, onEdit: { editingRoutine = routine })
@@ -27,7 +27,7 @@ struct HomeView: View {
                 if !store.completedRoutines.isEmpty {
                     sectionTitle("Schon erledigt", count: store.completedRoutines.count)
                         .padding(.top, 10)
-                    ForEach(store.completedRoutines) { routine in
+                    ForEach(store.completedRoutines, id: \.completedHomeRowID) { routine in
                         RoutineCard(routine: routine, completed: true, onPhotoRequested: {}, onEdit: { editingRoutine = routine })
                     }
                 }
@@ -132,6 +132,11 @@ struct HomeView: View {
         }
         .padding(.top, 4)
     }
+}
+
+private extension RoutineItem {
+    var openHomeRowID: String { "open:" + id.uuidString }
+    var completedHomeRowID: String { "completed:" + id.uuidString }
 }
 
 private struct RoutineCard: View {

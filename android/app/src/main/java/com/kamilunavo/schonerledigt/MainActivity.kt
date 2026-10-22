@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.text.DateFormat
 import java.util.Date
+import java.io.File
+import androidx.compose.runtime.saveable.rememberSaveable
 
 private val Purple = Color(0xFF6C63FF)
 private val Green = Color(0xFF28BFA3)
@@ -93,13 +95,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(val icon: ImageVector) { Today(Icons.Default.CheckCircle), History(Icons.Default.History), Settings(Icons.Default.Settings) }
+private enum class Tab(val icon: ImageVector) { Today(Icons.Default.CheckCircle), Sequences(Icons.Default.FormatListNumbered), History(Icons.Default.History), Settings(Icons.Default.Settings) }
 
 @Composable private fun MainTabs(store: RoutineStore, billing: BillingManager, billingState: BillingState, refresh: Int, reload: () -> Unit) {
-    var tab by remember { mutableStateOf(Tab.Today) }
-    Scaffold(containerColor = Canvas, bottomBar = { NavigationBar(Modifier.navigationBarsPadding(), containerColor = Color.White) { Tab.entries.forEach { item -> NavigationBarItem(tab == item, { tab = item }, { Icon(item.icon, null) }, label = { Text(when(item) { Tab.Today -> tr("Heute", "Today"); Tab.History -> tr("Verlauf", "History"); Tab.Settings -> tr("Einstellungen", "Settings") }) }) } } }) { padding ->
-        when(tab) { Tab.Today -> Home(store, billing, billingState, refresh, reload, Modifier.padding(padding)); Tab.History -> HistoryScreen(store, refresh, Modifier.padding(padding)); Tab.Settings -> SettingsScreen(store, billing, billingState, refresh, reload, Modifier.padding(padding)) }
+    var tab by rememberSaveable { mutableStateOf(Tab.Today) }
+    val context = LocalContext.current
+    val sequences = remember { SequenceStore(File(context.filesDir,"SchonErledigt/sequences.json")) }
+    var sequencePaywall by rememberSaveable { mutableStateOf(false) }
+    Scaffold(containerColor = Canvas, bottomBar = { NavigationBar(Modifier.navigationBarsPadding(), containerColor = Color.White) { Tab.entries.forEach { item -> NavigationBarItem(tab == item, { tab = item }, { Icon(item.icon, null) }, label = { Text(when(item) { Tab.Today -> tr("Heute", "Today"); Tab.Sequences -> tr("Abläufe", "Sequences"); Tab.History -> tr("Verlauf", "History"); Tab.Settings -> tr("Einstellungen", "Settings") }) }) } } }) { padding ->
+        when(tab) { Tab.Today -> Home(store, billing, billingState, refresh, reload, Modifier.padding(padding)); Tab.Sequences -> SequencesScreen(store,sequences,billingState.pro,german,refresh,reload,{ sequencePaywall = true },Modifier.padding(padding)); Tab.History -> HistoryScreen(store, refresh, Modifier.padding(padding)); Tab.Settings -> SettingsScreen(store, billing, billingState, refresh, reload, Modifier.padding(padding)) }
     }
+    if (sequencePaywall) Paywall(billingState,billing) { sequencePaywall = false }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
