@@ -34,7 +34,7 @@ jobs:
           gradle -p android verifyLauncherIconParity
           cmp -s SchonErledigt/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png android/app/src/main/res/drawable-nodpi/schonerledigt_store_icon.png
           sha256sum SchonErledigt/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png android/app/src/main/res/drawable-nodpi/schonerledigt_store_icon.png store/google-play/icon-512.png
-      - run: gradle -p android testDebugUnitTest --stacktrace
+      - run: gradle -p android verifyFragmentRuntime testDebugUnitTest --stacktrace
       - run: gradle -p android bundleDebug --stacktrace
       - run: gradle -p android bundleRelease --stacktrace
       - name: Verify Play release and native design

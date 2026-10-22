@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
-          gradle -p android --no-daemon --max-workers=1 testDebugUnitTest assembleDebug assembleDebugAndroidTest > "$RUNNER_TEMP/schon-native-acceptance/schon/build.log" 2>&1
+          gradle -p android --no-daemon --max-workers=1 verifyFragmentRuntime testDebugUnitTest assembleDebug assembleDebugAndroidTest > "$RUNNER_TEMP/schon-native-acceptance/schon/build.log" 2>&1
       - name: Enable official KVM
         run: test -e /dev/kvm && sudo chmod 666 /dev/kvm
       - name: Actual free-user native UI and process cold reopen
