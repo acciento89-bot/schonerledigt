@@ -1,11 +1,6 @@
 name: Android central-signed bundle (no Play upload)
 'on':
   workflow_dispatch: {}
-  push:
-    branches:
-    - main
-    paths:
-    - .github/workflows/android-central-signed-bundle.yml
 permissions:
   contents: read
 concurrency:
@@ -27,7 +22,7 @@ env:
   SOURCE_AAB_BASENAME: app-release.aab
 jobs:
   prepare:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 35
     permissions:
@@ -126,7 +121,7 @@ jobs:
         if-no-files-found: error
         retention-days: 1
   sign:
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || github.event_name == 'push')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 20

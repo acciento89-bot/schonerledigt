@@ -2,21 +2,9 @@ name: SchonErledigt Android Store Screenshots
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - "android/**"
-      - ".github/workflows/android-store-screenshots.yml"
-      - ".github/scripts/capture-android-store-screenshots.sh"
-  push:
-    branches: [main]
-    paths:
-      - "android/**"
-      - ".github/workflows/android-store-screenshots.yml"
-      - ".github/scripts/capture-android-store-screenshots.sh"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   capture:
@@ -58,16 +46,4 @@ jobs:
           path: store/google-play/screenshots/de-DE/*.png
           if-no-files-found: error
           retention-days: 30
-
-      - name: Persist authentic screenshots
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        shell: bash
-        run: |
-          git config user.name 'Kamilunavo Release Bot'
-          git config user.email 'actions@users.noreply.github.com'
-          git add store/google-play/screenshots/de-DE
-          if ! git diff --cached --quiet; then
-            git commit -m 'Store authentic SchonErledigt Android screenshots'
-            git push origin HEAD:main
-          fi
 
