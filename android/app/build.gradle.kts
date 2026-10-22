@@ -37,6 +37,11 @@ tasks.register("verifyLauncherIconParity") {
 }
 
 dependencies {
+    constraints {
+        implementation("androidx.fragment:fragment:1.9.1") {
+            because("Replace the obsolete Fragment 1.1.0 requested transitively by Play services")
+        }
+    }
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.12.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
@@ -53,4 +58,18 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
+}
+
+// Check both actual runtime graphs; a declaration alone does not prove the packaged version.
+tasks.register("verifyFragmentRuntime") {
+    doLast {
+        listOf("debugRuntimeClasspath", "releaseRuntimeClasspath").forEach { name ->
+            val selected = configurations.getByName(name).resolvedConfiguration.resolvedArtifacts.filter {
+                it.moduleVersion.id.group == "androidx.fragment" && it.name == "fragment"
+            }
+            check(selected.size == 1 && selected.single().moduleVersion.id.version == "1.9.1") {
+                "Expected Fragment 1.9.1 in $name; found ${selected.map { it.moduleVersion.id }}"
+            }
+        }
+    }
 }
