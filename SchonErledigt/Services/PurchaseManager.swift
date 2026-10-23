@@ -10,7 +10,17 @@ import StoreKit
     @Published var errorMessage: String?
     private var updatesTask: Task<Void, Never>?
 
+    // Native QA must not contact real purchase or restoration providers.
+    private var providerDisabledQA: Bool {
+#if DEBUG
+        ProcessInfo.processInfo.arguments.contains("--schonProviderDisabledQA")
+#else
+        false
+#endif
+    }
+
     init() {
+        guard !providerDisabledQA else { return }
         updatesTask = Task { [weak self] in
             for await update in Transaction.updates {
                 if case .verified(let transaction) = update { await transaction.finish(); await self?.refreshEntitlements() }
@@ -21,11 +31,13 @@ import StoreKit
     deinit { updatesTask?.cancel() }
 
     func load() async {
+        guard !providerDisabledQA else { return }
         isLoading = true; defer { isLoading = false }
         do { products = try await Product.products(for: [Self.yearlyID, Self.lifetimeID]).sorted { $0.price < $1.price }; await refreshEntitlements() }
         catch { errorMessage = error.localizedDescription }
     }
     func purchase(_ product: Product) async {
+        guard !providerDisabledQA else { return }
         do {
             if case .success(let verification) = try await product.purchase(), case .verified(let transaction) = verification {
                 await transaction.finish(); await refreshEntitlements()
@@ -33,6 +45,7 @@ import StoreKit
         } catch { errorMessage = error.localizedDescription }
     }
     func restore() async {
+        guard !providerDisabledQA else { return }
         do { try await StoreKit.AppStore.sync(); await refreshEntitlements() }
         catch { errorMessage = error.localizedDescription }
     }
